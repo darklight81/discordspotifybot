@@ -31,31 +31,64 @@ async def on_message(message):
         return
 
     if message.content.startswith('--add'):
-        if not validate_message(message):
+        track_id = validate_message(message)
+        if not track_id:
+            await message.channel.send('Wrong url.')
+            return
+        playlist_id = playlist_exists()
+        if not playlist_id:
+            # TODO: Create the playlist by name of the discord server + channel
+            sp.user_playlist_create(SPOTIFY_ID, PLAYLIST_NAME)
+        try:
+            sp.playlist_add_items(playlist_id, {track_id})
+        except:
             await message.channel.send('Wrong url.')
             return
 
-        if not playlist_exists:
-            sp.user_playlist_create(SPOTIFY_ID, PLAYLIST_NAME)
-            print('test')
+        track = sp.track(track_id)
+        msg = 'Track: ' + track['name'] + ' - ' + track['artists'][0]['name'] + ' added to the playlist...'
+        await message.channel.send(msg)
 
 
+# Validates the message sent by client and returns track id or false
 def validate_message(message):
     url = message.content
     url = url.split()[1]
+
     if not validators.url(url):
         return False
-    return True
+
+    split_url = url.split('/')
+    track_id = False
+
+    for id_el, el in enumerate(split_url):
+        if el == 'track':
+            try:
+                track_id = split_url[id_el + 1]
+            except IndexError:
+                return False
+            break
+
+    if not track_id:
+        return False
+
+    track_id = track_id.split('?')[0]
+    try:
+        sp.track(track_id)
+    except:
+        return False
+
+    return track_id
 
 
 def playlist_exists():
     playlists = sp.user_playlists(SPOTIFY_ID)['items']
-    exists = False
+    playlist_id = False
     for playlist in playlists:
         if playlist['name'] == PLAYLIST_NAME:
-            exists = True
+            playlist_id = playlist['id']
             break
-    return exists
+    return playlist_id
 
 
 client.run(CLIENT_SECRET_DISC)
