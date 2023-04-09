@@ -13,7 +13,9 @@ SPOTIPY_REDIRECT_URI = os.getenv('REDIRECT_URI')
 SPOTIFY_ID = 'lolskiller'
 PLAYLIST_PREFIX = 'BaN - '
 
-client = discord.Client()
+intents = discord.Intents.default()
+intents.members = True
+client = discord.Client(intents=intents)
 
 scope = "user-library-read playlist-modify-public"
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scope, client_id=SPOTIPY_CLIENT_ID,
@@ -30,7 +32,6 @@ async def on_message(message):
     if message.author == client.user:
         return
     # Adds song to the playlist
-    print('channel: ', message.channel)
     playlist_name = PLAYLIST_PREFIX + str(message.channel)
     if message.content.startswith('<@975890840444633148>'):
         track_id = validate_message(message)
@@ -51,6 +52,7 @@ async def on_message(message):
         msg = 'Track: ' + track['name'] + ' - ' + track['artists'][0]['name'] + ' added to the playlist...'
         await message.channel.send(msg)
         await message.add_reaction('👌')
+
 
 # Validates the message sent by client and returns track id or false
 def validate_message(message):

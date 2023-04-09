@@ -1,0 +1,4 @@
+discord
+spotipy
+python-dotenv
+validators
