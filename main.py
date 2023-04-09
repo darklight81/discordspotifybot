@@ -96,4 +96,5 @@ def playlist_exists(playlist_name):
     return playlist_id
 
 
-client.run(CLIENT_SECRET_DISC)
+if __name__ == '__main__':
+    client.run(CLIENT_SECRET_DISC)
