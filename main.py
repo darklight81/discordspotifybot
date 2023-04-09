@@ -11,7 +11,7 @@ SPOTIPY_CLIENT_ID = os.getenv('CLIENT_ID_SPOTIFY')
 SPOTIPY_CLIENT_SECRET = os.getenv('CLIENT_SECRET_SPOTIFY')
 SPOTIPY_REDIRECT_URI = os.getenv('REDIRECT_URI')
 SPOTIFY_ID = 'lolskiller'
-PLAYLIST_NAME = 'Test Playlist'
+PLAYLIST_PREFIX = 'BaN - '
 
 client = discord.Client()
 
@@ -29,32 +29,34 @@ async def on_ready():
 async def on_message(message):
     if message.author == client.user:
         return
-
-    if message.content.startswith('--add'):
+    # Adds song to the playlist
+    print('channel: ', message.channel)
+    playlist_name = PLAYLIST_PREFIX + str(message.channel)
+    if message.content.startswith('<@975890840444633148>'):
         track_id = validate_message(message)
         if not track_id:
-            await message.channel.send('Wrong url.')
+            await message.add_reaction('👎')
             return
-        playlist_id = playlist_exists()
+        playlist_id = playlist_exists(playlist_name)
         if not playlist_id:
-            # TODO: Create the playlist by name of the discord server + channel
-            sp.user_playlist_create(SPOTIFY_ID, PLAYLIST_NAME)
+            sp.user_playlist_create(SPOTIFY_ID, playlist_name)
+            playlist_id = playlist_exists(playlist_name)
         try:
             sp.playlist_add_items(playlist_id, {track_id})
         except:
-            await message.channel.send('Wrong url.')
+            await message.add_reaction('👎')
             return
 
         track = sp.track(track_id)
         msg = 'Track: ' + track['name'] + ' - ' + track['artists'][0]['name'] + ' added to the playlist...'
         await message.channel.send(msg)
-
+        await message.add_reaction('👌')
 
 # Validates the message sent by client and returns track id or false
 def validate_message(message):
     url = message.content
     url = url.split()[1]
-
+    print('url: ', url)
     if not validators.url(url):
         return False
 
@@ -81,11 +83,12 @@ def validate_message(message):
     return track_id
 
 
-def playlist_exists():
+# Checks the existence of playlist, if doesnt exist, returns false,  else returns playlist id
+def playlist_exists(playlist_name):
     playlists = sp.user_playlists(SPOTIFY_ID)['items']
     playlist_id = False
     for playlist in playlists:
-        if playlist['name'] == PLAYLIST_NAME:
+        if playlist['name'] == playlist_name:
             playlist_id = playlist['id']
             break
     return playlist_id
