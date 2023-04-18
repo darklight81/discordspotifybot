@@ -15,6 +15,7 @@ PLAYLIST_PREFIX = 'BaN - '
 
 intents = discord.Intents.default()
 intents.members = True
+intents.reactions = True
 client = discord.Client(intents=intents)
 
 scope = "user-library-read playlist-modify-public"
@@ -28,12 +29,15 @@ async def on_ready():
 
 
 @client.event
-async def on_message(message):
-    if message.author == client.user:
-        return
-    # Adds song to the playlist
-    playlist_name = PLAYLIST_PREFIX + str(message.channel)
-    if message.content.startswith('<@975890840444633148>'):
+async def on_raw_reaction_add(payload):
+    # Check if the reaction is a :bookmark: reaction
+    if str(payload.emoji.name) == '🔖':
+        channel = await client.fetch_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        playlist_name = PLAYLIST_PREFIX + str(message.channel)
+        if not message.content.startswith('https://open.spotify.com/'):
+            await message.add_reaction('👎')
+            return
         track_id = validate_message(message)
         if not track_id:
             await message.add_reaction('👎')
@@ -49,15 +53,24 @@ async def on_message(message):
             return
 
         track = sp.track(track_id)
-        msg = 'Track: ' + track['name'] + ' - ' + track['artists'][0]['name'] + ' added to the playlist...'
-        await message.channel.send(msg)
         await message.add_reaction('👌')
+
+
+@client.event
+async def on_message(message):
+    if message.author == client.user:
+        return
+
+    if message.content.startswith('!gn'):
+        emoji = discord.utils.get(client.emojis, name='moyalSleep')
+        if emoji:
+            await message.channel.send(str(emoji))
 
 
 # Validates the message sent by client and returns track id or false
 def validate_message(message):
     url = message.content
-    url = url.split()[1]
+    url = url.split()[0]
     print('url: ', url)
     if not validators.url(url):
         return False
