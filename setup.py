@@ -47,6 +47,12 @@ async def on_raw_reaction_add(payload):
             sp.user_playlist_create(SPOTIFY_ID, playlist_name)
             playlist_id = playlist_exists(playlist_name)
         try:
+            # Check if the track is already in the playlist
+            tracks = sp.playlist_tracks(playlist_id)['items']
+            for item in tracks:
+                if item['track']['id'] == track_id:
+                    await message.add_reaction('👍')
+                    return
             sp.playlist_add_items(playlist_id, {track_id})
         except:
             await message.add_reaction('👎')
